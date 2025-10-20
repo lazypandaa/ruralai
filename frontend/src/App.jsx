@@ -5,10 +5,12 @@ import axios from 'axios'
 function App() {
   const [isRecording, setIsRecording] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
-  const [response, setResponse] = useState(null)
-  const [error, setError] = useState(null)
+  const [response, setResponse] = useState('')
+  const [error, setError] = useState('')
   const [audioUrl, setAudioUrl] = useState(null)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [textInput, setTextInput] = useState('')
+  const [inputMode, setInputMode] = useState('voice') // 'voice' or 'text'
   
   const mediaRecorderRef = useRef(null)
   const audioRef = useRef(null)
@@ -16,8 +18,8 @@ function App() {
 
   const startRecording = async () => {
     try {
-      setError(null)
-      setResponse(null)
+      setError('')
+      setResponse('')
       setAudioUrl(null)
       
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -50,9 +52,11 @@ function App() {
 
   const processAudio = async (audioBlob) => {
     setIsProcessing(true)
+    setError('')
+    
     try {
       const formData = new FormData()
-      formData.append('audio_file', audioBlob, 'recording.wav')
+      formData.append('file', audioBlob)
 
       const response = await axios.post('http://localhost:8000/process-audio', formData, {
         headers: {
@@ -60,14 +64,44 @@ function App() {
         },
       })
 
-      setResponse(response.data)
-      
+      setResponse(response.data.response)
       if (response.data.audio_url) {
-        setAudioUrl(`http://localhost:8000${response.data.audio_url}`)
+        const audio = new Audio(`http://localhost:8000${response.data.audio_url}`)
+        await audio.play()
       }
     } catch (err) {
-      setError('Failed to process audio. Please try again.')
-      console.error('Error processing audio:', err)
+      setError('Failed to process audio')
+      console.error(err)
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const processText = async () => {
+    if (!textInput.trim()) {
+      setError('Please enter some text to process.')
+      return
+    }
+
+    setIsProcessing(true)
+    setError('')
+    setResponse('')
+    setAudioUrl(null)
+
+    try {
+      const response = await axios.post('http://localhost:8000/process-text', {
+        text: textInput.trim()
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      setResponse(response.data)
+    } catch (err) {
+      const errorMessage = err.response?.data?.detail || 'Failed to process text. Please try again.'
+      setError(errorMessage)
+      console.error('Error processing text:', err)
     } finally {
       setIsProcessing(false)
     }
@@ -97,30 +131,72 @@ function App() {
       </div>
 
       <div className="main-card">
-        <div className="voice-section">
+        <div className="input-mode-selector">
           <button
-            className={`voice-button ${isRecording ? 'recording' : ''}`}
-            onClick={isRecording ? stopRecording : startRecording}
-            disabled={isProcessing}
+            className={`mode-button ${inputMode === 'voice' ? 'active' : ''}`}
+            onClick={() => setInputMode('voice')}
           >
-            {isProcessing ? (
-              <Loader className="loading" />
-            ) : isRecording ? (
-              <MicOff size={40} />
-            ) : (
-              <Mic size={40} />
-            )}
+            🎤 Voice
           </button>
-          
-          <div className="status-text">
-            {isRecording 
-              ? "🎤 Listening... Click to stop" 
-              : isProcessing 
-              ? "🤖 Processing your request..." 
-              : "👆 Click to speak in your local dialect"
-            }
-          </div>
+          <button
+            className={`mode-button ${inputMode === 'text' ? 'active' : ''}`}
+            onClick={() => setInputMode('text')}
+          >
+            ✍️ Text
+          </button>
         </div>
+
+        {inputMode === 'voice' ? (
+          <div className="voice-section">
+            <button
+              className={`voice-button ${isRecording ? 'recording' : ''}`}
+              onClick={isRecording ? stopRecording : startRecording}
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <Loader className="loading" />
+              ) : isRecording ? (
+                <MicOff size={40} />
+              ) : (
+                <Mic size={40} />
+              )}
+            </button>
+            
+            <div className="status-text">
+              {isRecording 
+                ? "🎤 Listening... Click to stop" 
+                : isProcessing 
+                ? "🤖 Processing your request..." 
+                : "👆 Click to speak in your local dialect"
+              }
+            </div>
+          </div>
+        ) : (
+          <div className="text-section">
+            <textarea
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              placeholder="Type your question here... (e.g., मौसम कैसा है?, crop prices, government schemes)"
+              className="text-input"
+              rows={3}
+              disabled={isProcessing}
+            />
+            <button
+              className="submit-button"
+              onClick={processText}
+              disabled={isProcessing || !textInput.trim()}
+            >
+              {isProcessing ? (
+                <>
+                  <Loader className="loading" size={16} />
+                  Processing...
+                </>
+              ) : (
+                'Submit Question'
+              )}
+            </button>
+          </div>
+        )}
 
         {error && (
           <div className="error-message">
