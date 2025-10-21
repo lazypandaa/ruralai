@@ -3,10 +3,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from openai import AzureOpenAI
+from fastapi.staticfiles import StaticFiles
 import os
 import tempfile
+from pathlib import Path
 
 app = FastAPI()
+
+# Create audio directory
+AUDIO_DIR = Path("audio_files")
+AUDIO_DIR.mkdir(exist_ok=True)
+
+# Serve static files
+app.mount("/audio", StaticFiles(directory="audio_files"), name="audio")
 
 # Configure CORS
 app.add_middleware(
@@ -63,8 +72,8 @@ async def process_audio(file: UploadFile = File(...)):
         # Get Azure OpenAI response only if we have valid transcript
         if transcript and "Could not understand" not in transcript:
             messages = [
-                {"role": "system", "content": "You are a helpful assistant for rural India focused on farming, weather, crops, and government schemes. Respond in simple, clear language."},
-                {"role": "user", "content": transcript}
+                {"role": "system", "content": "You are a helpful assistant for rural India focused on farming, weather, crops, and government schemes. IMPORTANT: You must ALWAYS respond in English language only, no matter what language the user speaks. Never respond in Hindi, Urdu, or any other language. Use simple, clear English words."},
+                {"role": "user", "content": f"Please respond in English only: {transcript}"}
             ]
             try:
                 response = azure_client.chat.completions.create(
@@ -75,6 +84,24 @@ async def process_audio(file: UploadFile = File(...)):
                 )
                 response_text = response.choices[0].message.content
                 print(f"Azure OpenAI response generated successfully")
+                
+                # Generate speech using Azure OpenAI TTS
+                audio_url = None
+                try:
+                    speech_response = azure_client.audio.speech.create(
+                        model="tts-1",
+                        voice="alloy",
+                        input=response_text
+                    )
+                    
+                    # Save audio file
+                    audio_file_path = AUDIO_DIR / "response.mp3"
+                    speech_response.stream_to_file(str(audio_file_path))
+                    audio_url = "/audio/response.mp3"
+                    print(f"TTS audio generated successfully")
+                except Exception as tts_error:
+                    print(f"TTS error: {tts_error}")
+                    
             except Exception as azure_error:
                 print(f"Azure OpenAI error: {azure_error}")
                 response_text = "I'm here to help you with farming, weather, and government schemes. Please try again or use text input."
@@ -84,7 +111,7 @@ async def process_audio(file: UploadFile = File(...)):
         return JSONResponse({
             "transcript": transcript,
             "response_text": response_text,
-            "audio_url": None
+            "audio_url": audio_url
         })
 
     except Exception as e:
@@ -107,8 +134,8 @@ async def process_text(request: TextRequest):
     try:
         # Get Azure OpenAI response
         messages = [
-            {"role": "system", "content": "You are a helpful assistant for rural India focused on farming, weather, crops, and government schemes. Respond in simple, clear language."},
-            {"role": "user", "content": request.text}
+            {"role": "system", "content": "You are a helpful assistant for rural India focused on farming, weather, crops, and government schemes. IMPORTANT: You must ALWAYS respond in English language only, no matter what language the user speaks. Never respond in Hindi, Urdu, or any other language. Use simple, clear English words."},
+            {"role": "user", "content": f"Please respond in English only: {request.text}"}
         ]
         response = azure_client.chat.completions.create(
             model=azure_deployment,

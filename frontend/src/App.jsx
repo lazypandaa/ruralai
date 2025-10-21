@@ -69,7 +69,11 @@ function App() {
         response_text: response.data.response_text
       })
       if (response.data.audio_url) {
-        setAudioUrl(`http://localhost:8000${response.data.audio_url}`)
+        const audioUrl = `http://localhost:8000${response.data.audio_url}`
+        setAudioUrl(audioUrl)
+        // Auto-play the response
+        const audio = new Audio(audioUrl)
+        audio.play().catch(e => console.log('Auto-play failed:', e))
       }
     } catch (err) {
       setError('Failed to process audio')
@@ -216,6 +220,15 @@ function App() {
             
             <h3>💬 Response:</h3>
             <p className="response-text">{response.response_text}</p>
+            
+            {audioUrl && (
+              <div style={{ marginTop: '15px' }}>
+                <h3>🔊 Voice Response:</h3>
+                <audio controls src={audioUrl} style={{ width: '100%' }}>
+                  Your browser does not support the audio element.
+                </audio>
+              </div>
+            )}
           </div>
         )}
       </div>
