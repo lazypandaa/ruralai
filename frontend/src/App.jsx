@@ -64,10 +64,12 @@ function App() {
         },
       })
 
-      setResponse(response.data.response)
+      setResponse({
+        transcript: response.data.transcript,
+        response_text: response.data.response_text
+      })
       if (response.data.audio_url) {
-        const audio = new Audio(`http://localhost:8000${response.data.audio_url}`)
-        await audio.play()
+        setAudioUrl(`http://localhost:8000${response.data.audio_url}`)
       }
     } catch (err) {
       setError('Failed to process audio')
@@ -97,7 +99,10 @@ function App() {
         },
       })
 
-      setResponse(response.data)
+      setResponse({
+        transcript: textInput,
+        response_text: response.data
+      })
     } catch (err) {
       const errorMessage = err.response?.data?.detail || 'Failed to process text. Please try again.'
       setError(errorMessage)
@@ -206,42 +211,11 @@ function App() {
 
         {response && (
           <div className="response-section">
-            <h3>📝 Transcript:</h3>
+            <h3>📝 What you said:</h3>
             <p className="response-text">{response.transcript}</p>
             
             <h3>💬 Response:</h3>
             <p className="response-text">{response.response_text}</p>
-            
-            {audioUrl && (
-              <div>
-                <h3>🔊 Voice Response:</h3>
-                <audio
-                  ref={audioRef}
-                  src={audioUrl}
-                  onEnded={handleAudioEnded}
-                  preload="auto"
-                />
-                <button
-                  onClick={playAudio}
-                  style={{
-                    background: '#667eea',
-                    color: 'white',
-                    border: 'none',
-                    padding: '10px 20px',
-                    borderRadius: '25px',
-                    cursor: 'pointer',
-                    marginTop: '10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    margin: '10px auto'
-                  }}
-                >
-                  {isPlaying ? <Pause size={16} /> : <Play size={16} />}
-                  {isPlaying ? 'Pause' : 'Play'} Response
-                </button>
-              </div>
-            )}
           </div>
         )}
       </div>
