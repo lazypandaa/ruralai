@@ -2,7 +2,7 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from openai import AzureOpenAI, OpenAI
+from openai import AzureOpenAI
 import os
 import tempfile
 
@@ -29,13 +29,8 @@ azure_client = AzureOpenAI(
     api_version=azure_api_version
 )
 
-# Initialize OpenAI client for Whisper
-openai_key = os.getenv("OPENAI_API_KEY")
-if not openai_key:
-    print("WARNING: OPENAI_API_KEY not found in environment variables")
-    client = None
-else:
-    client = OpenAI(api_key=openai_key)
+# Use same Azure client for Whisper
+client = azure_client
 
 
 
@@ -45,34 +40,28 @@ async def process_audio(file: UploadFile = File(...)):
     try:
         # Save audio to temporary file
         content = await file.read()
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as temp_file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
             temp_file.write(content)
             temp_file_path = temp_file.name
 
-        print(f"Audio file received: {len(content)} bytes")
+        print(f"Audio file received: {len(content)} bytes, saved as: {temp_file_path}")
 
-        # Speech to text using OpenAI Whisper
+        # Speech to text using Azure Whisper deployment
         transcript = None
-        if client:
-            try:
-                with open(temp_file_path, "rb") as audio_file:
-                    # Set file name for proper format detection
-                    audio_file.name = "audio.webm"
-                    response = client.audio.transcriptions.create(
-                        model="whisper-1",
-                        file=audio_file
-                    )
-                    transcript = response.text
-                    print(f"Whisper transcription successful: {transcript}")
-            except Exception as speech_error:
-                print(f"Whisper error: {speech_error}")
-                transcript = "Could not understand the audio. Please speak clearly."
-        else:
-            print("OpenAI client not available - no API key")
-            transcript = "Speech recognition unavailable. Please use text input."
+        try:
+            with open(temp_file_path, "rb") as audio_file:
+                response = azure_client.audio.transcriptions.create(
+                    model="whisper",
+                    file=audio_file
+                )
+                transcript = response.text
+                print(f"Azure Whisper transcription successful: {transcript}")
+        except Exception as speech_error:
+            print(f"Azure Whisper error: {speech_error}")
+            transcript = "Could not understand the audio. Please speak clearly."
 
         # Get Azure OpenAI response only if we have valid transcript
-        if transcript and "Could not understand" not in transcript and "unavailable" not in transcript:
+        if transcript and "Could not understand" not in transcript:
             messages = [
                 {"role": "system", "content": "You are a helpful assistant for rural India focused on farming, weather, crops, and government schemes. Respond in simple, clear language."},
                 {"role": "user", "content": transcript}
