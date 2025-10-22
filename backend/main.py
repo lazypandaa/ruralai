@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from openai import AzureOpenAI
 import os
 import tempfile
+import requests
 
 app = FastAPI()
 
@@ -29,13 +30,11 @@ azure_client = AzureOpenAI(
     api_version=azure_api_version
 )
 
-# Use same Azure client for Whisper
-client = azure_client
+client = azure_client  # alias
 
-
-
+# ---------------------- AUDIO PROCESSING ----------------------
 @app.post("/process-audio")
-async def process_audio(file: UploadFile = File(...)):
+async def process_audio(file: UploadFile = File(...), language: str = "en"):
     temp_file = None
     try:
         # Save audio to temporary file
@@ -63,7 +62,7 @@ async def process_audio(file: UploadFile = File(...)):
         # Get Azure OpenAI response only if we have valid transcript
         if transcript and "Could not understand" not in transcript:
             messages = [
-                {"role": "system", "content": "You are a helpful assistant for rural India focused on farming, weather, crops, and government schemes. Respond in simple, clear language."},
+                {"role": "system", "content": f"You are a helpful assistant for rural India focused on farming, weather, crops, and government schemes. Respond in simple, clear language. Use language: {language}."},
                 {"role": "user", "content": transcript}
             ]
             try:
@@ -77,7 +76,7 @@ async def process_audio(file: UploadFile = File(...)):
                 print(f"Azure OpenAI response generated successfully")
             except Exception as azure_error:
                 print(f"Azure OpenAI error: {azure_error}")
-                response_text = "I'm here to help you with farming, weather, and government schemes. Please try again or use text input."
+                response_text = "I'm here to help you with farming, weather, and government schemes. Please try again."
         else:
             response_text = "I couldn't understand your audio. Please try speaking more clearly or use the text input option."
 
@@ -91,23 +90,24 @@ async def process_audio(file: UploadFile = File(...)):
         print(f"General error: {e}")
         return JSONResponse({
             "transcript": "Audio processing failed",
-            "response_text": "I'm having trouble processing your audio. Please try the text input instead.",
+            "response_text": "I'm having trouble processing your audio. Please try again later.",
             "audio_url": None
         })
     finally:
-        # Cleanup temporary file
         if temp_file and os.path.exists(temp_file_path):
             os.unlink(temp_file_path)
 
+
+# ---------------------- TEXT PROCESSING ----------------------
 class TextRequest(BaseModel):
     text: str
+    language: str = "en"
 
 @app.post("/process-text")
 async def process_text(request: TextRequest):
     try:
-        # Get Azure OpenAI response
         messages = [
-            {"role": "system", "content": "You are a helpful assistant for rural India focused on farming, weather, crops, and government schemes. Respond in simple, clear language."},
+            {"role": "system", "content": f"You are a helpful assistant for rural India focused on farming, weather, crops, and government schemes. Respond in simple, clear language. Use language: {request.language}."},
             {"role": "user", "content": request.text}
         ]
         response = azure_client.chat.completions.create(
@@ -124,3 +124,71 @@ async def process_text(request: TextRequest):
     except Exception as e:
         print(f"Text processing error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
+# ---------------------- WEATHER INFORMATION ----------------------
+class WeatherRequest(BaseModel):
+    city: str
+    language: str = "en"
+
+@app.post("/api/weather")
+async def get_weather(request: WeatherRequest):
+    try:
+        api_key = os.getenv("OPENWEATHER_API_KEY", "99f42bfabc8ad962157251343277ea08")
+        url = f"http://api.openweathermap.org/data/2.5/weather?q={request.city}&appid={api_key}&units=metric&lang={request.language}"
+        res = requests.get(url)
+        data = res.json()
+
+        if res.status_code != 200:
+            return JSONResponse({"error": data.get("message", "Weather data not found")}, status_code=400)
+
+        weather_desc = data["weather"][0]["description"]
+        temp = data["main"]["temp"]
+        humidity = data["main"]["humidity"]
+        response_text = f"The current weather in {request.city} is {weather_desc} with a temperature of {temp}°C and humidity {humidity}%."
+
+        return JSONResponse({"text": response_text})
+    except Exception as e:
+        print(f"Weather API error: {e}")
+        raise HTTPException(status_code=500, detail="Unable to fetch weather right now.")
+
+
+# ---------------------- CROP PRICES ----------------------
+class CropPriceRequest(BaseModel):
+    crop: str
+    market: str = "Delhi"
+
+@app.post("/api/crop-prices")
+async def get_crop_prices(request: CropPriceRequest):
+    try:
+        # Simulated response
+        response_text = f"The latest price for {request.crop} in {request.market} is ₹{round(2500 + hash(request.crop) % 500)} per quintal."
+        return JSONResponse({"text": response_text})
+    except Exception as e:
+        print(f"Crop API error: {e}")
+        raise HTTPException(status_code=500, detail="Unable to fetch crop prices right now.")
+
+
+# ---------------------- GOVERNMENT SCHEMES ----------------------
+class SchemeRequest(BaseModel):
+    topic: str
+
+@app.post("/api/gov-schemes")
+async def get_gov_schemes(request: SchemeRequest):
+    try:
+        messages = [
+            {"role": "system", "content": "You are a helpful assistant for Indian farmers. Provide info about government schemes related to agriculture in simple terms."},
+            {"role": "user", "content": f"Tell me about government schemes related to {request.topic}."}
+        ]
+        response = azure_client.chat.completions.create(
+            model=azure_deployment,
+            messages=messages,
+            max_tokens=1024,
+            temperature=0.7
+        )
+        summary = response.choices[0].message.content
+        return JSONResponse({"text": summary})
+    except Exception as e:
+        print(f"Gov scheme error: {e}")
+        raise HTTPException(status_code=500, detail="Unable to fetch government schemes right now.")

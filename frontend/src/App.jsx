@@ -10,8 +10,9 @@ function App() {
   const [audioUrl, setAudioUrl] = useState(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [textInput, setTextInput] = useState('')
-  const [inputMode, setInputMode] = useState('voice') // 'voice' or 'text'
-  
+  const [inputMode, setInputMode] = useState('voice')
+  const [language, setLanguage] = useState('en')
+
   const mediaRecorderRef = useRef(null)
   const audioRef = useRef(null)
   const chunksRef = useRef([])
@@ -21,21 +22,17 @@ function App() {
       setError('')
       setResponse('')
       setAudioUrl(null)
-      
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       mediaRecorderRef.current = new MediaRecorder(stream)
       chunksRef.current = []
-
       mediaRecorderRef.current.ondataavailable = (event) => {
         chunksRef.current.push(event.data)
       }
-
       mediaRecorderRef.current.onstop = async () => {
         const audioBlob = new Blob(chunksRef.current, { type: 'audio/wav' })
         await processAudio(audioBlob)
         stream.getTracks().forEach(track => track.stop())
       }
-
       mediaRecorderRef.current.start()
       setIsRecording(true)
     } catch (err) {
@@ -53,17 +50,13 @@ function App() {
   const processAudio = async (audioBlob) => {
     setIsProcessing(true)
     setError('')
-    
     try {
       const formData = new FormData()
       formData.append('file', audioBlob)
-
+      formData.append('language', language)
       const response = await axios.post('http://localhost:8000/process-audio', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       })
-
       setResponse({
         transcript: response.data.transcript,
         response_text: response.data.response_text
@@ -84,21 +77,17 @@ function App() {
       setError('Please enter some text to process.')
       return
     }
-
     setIsProcessing(true)
     setError('')
     setResponse('')
     setAudioUrl(null)
-
     try {
       const response = await axios.post('http://localhost:8000/process-text', {
-        text: textInput.trim()
+        text: textInput.trim(),
+        language
       }, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
       })
-
       setResponse({
         transcript: textInput,
         response_text: response.data
@@ -124,8 +113,40 @@ function App() {
     }
   }
 
-  const handleAudioEnded = () => {
-    setIsPlaying(false)
+  const handleAudioEnded = () => setIsPlaying(false)
+
+  // -------------------- New Feature Handlers --------------------
+  const getWeather = async () => {
+    const city = prompt("Enter your city:")
+    if (!city) return
+    try {
+      const res = await axios.post('http://localhost:8000/api/weather', { city, language })
+      setResponse({ transcript: city, response_text: res.data.text })
+    } catch {
+      setError("Unable to fetch weather.")
+    }
+  }
+
+  const getCropPrice = async () => {
+    const crop = prompt("Enter crop name:")
+    if (!crop) return
+    try {
+      const res = await axios.post('http://localhost:8000/api/crop-prices', { crop })
+      setResponse({ transcript: crop, response_text: res.data.text })
+    } catch {
+      setError("Unable to fetch crop prices.")
+    }
+  }
+
+  const getGovSchemes = async () => {
+    const topic = prompt("Enter topic (e.g., irrigation, fertilizer):")
+    if (!topic) return
+    try {
+      const res = await axios.post('http://localhost:8000/api/gov-schemes', { topic })
+      setResponse({ transcript: topic, response_text: res.data.text })
+    } catch {
+      setError("Unable to fetch government schemes.")
+    }
   }
 
   return (
@@ -135,123 +156,68 @@ function App() {
         <p>AI Voice Assistant for Rural India</p>
       </div>
 
+      {/* Language Selector */}
+      <div className="language-selector">
+        <label>🌐 Select Language: </label>
+        <select value={language} onChange={(e) => setLanguage(e.target.value)}>
+          <option value="en">English</option>
+          <option value="hi">Hindi</option>
+          <option value="mr">Marathi</option>
+          <option value="bn">Bengali</option>
+          <option value="ta">Tamil</option>
+        </select>
+      </div>
+
       <div className="main-card">
         <div className="input-mode-selector">
-          <button
-            className={`mode-button ${inputMode === 'voice' ? 'active' : ''}`}
-            onClick={() => setInputMode('voice')}
-          >
-            🎤 Voice
-          </button>
-          <button
-            className={`mode-button ${inputMode === 'text' ? 'active' : ''}`}
-            onClick={() => setInputMode('text')}
-          >
-            ✍️ Text
-          </button>
+          <button className={`mode-button ${inputMode === 'voice' ? 'active' : ''}`} onClick={() => setInputMode('voice')}>🎤 Voice</button>
+          <button className={`mode-button ${inputMode === 'text' ? 'active' : ''}`} onClick={() => setInputMode('text')}>✍️ Text</button>
         </div>
 
         {inputMode === 'voice' ? (
           <div className="voice-section">
-            <button
-              className={`voice-button ${isRecording ? 'recording' : ''}`}
-              onClick={isRecording ? stopRecording : startRecording}
-              disabled={isProcessing}
-            >
-              {isProcessing ? (
-                <Loader className="loading" />
-              ) : isRecording ? (
-                <MicOff size={40} />
-              ) : (
-                <Mic size={40} />
-              )}
+            <button className={`voice-button ${isRecording ? 'recording' : ''}`} onClick={isRecording ? stopRecording : startRecording} disabled={isProcessing}>
+              {isProcessing ? <Loader className="loading" /> : isRecording ? <MicOff size={40} /> : <Mic size={40} />}
             </button>
-            
             <div className="status-text">
-              {isRecording 
-                ? "🎤 Listening... Click to stop" 
-                : isProcessing 
-                ? "🤖 Processing your request..." 
-                : "👆 Click to speak in your local dialect"
-              }
+              {isRecording ? "🎤 Listening... Click to stop" :
+                isProcessing ? "🤖 Processing your request..." :
+                  "👆 Click to speak in your local dialect"}
             </div>
           </div>
         ) : (
           <div className="text-section">
-            <textarea
-              value={textInput}
-              onChange={(e) => setTextInput(e.target.value)}
-              placeholder="Type your question here... (e.g., मौसम कैसा है?, crop prices, government schemes)"
-              className="text-input"
-              rows={3}
-              disabled={isProcessing}
-            />
-            <button
-              className="submit-button"
-              onClick={processText}
-              disabled={isProcessing || !textInput.trim()}
-            >
-              {isProcessing ? (
-                <>
-                  <Loader className="loading" size={16} />
-                  Processing...
-                </>
-              ) : (
-                'Submit Question'
-              )}
+            <textarea value={textInput} onChange={(e) => setTextInput(e.target.value)} placeholder="Type your question here..." className="text-input" rows={3} disabled={isProcessing} />
+            <button className="submit-button" onClick={processText} disabled={isProcessing || !textInput.trim()}>
+              {isProcessing ? <><Loader className="loading" size={16} /> Processing...</> : 'Submit Question'}
             </button>
           </div>
         )}
 
-        {error && (
-          <div className="error-message">
-            {error}
-          </div>
-        )}
+        {/* Feature buttons */}
+        <div className="feature-buttons">
+          <button onClick={getWeather}>🌤️ Check Weather
+            Get real-time weather updates for your area.
+          </button>
+          <button onClick={getCropPrice}>💰 Crop Prices
+            Get the latest market prices for your crops.
+          </button>
+          <button onClick={getGovSchemes}>🏛️ Govt Schemes
+            Learn about government schemes available to you.
+          </button>
+          
+        </div>
+
+        {error && <div className="error-message">{error}</div>}
 
         {response && (
           <div className="response-section">
             <h3>📝 What you said:</h3>
             <p className="response-text">{response.transcript}</p>
-            
             <h3>💬 Response:</h3>
             <p className="response-text">{response.response_text}</p>
           </div>
         )}
-      </div>
-
-      <div className="features-grid">
-        <div className="feature-card">
-          <div className="feature-icon">🌤️</div>
-          <div className="feature-title">Weather Information</div>
-          <div className="feature-description">
-            Get real-time weather updates and farming advice for your location
-          </div>
-        </div>
-
-        <div className="feature-card">
-          <div className="feature-icon">💰</div>
-          <div className="feature-title">Crop Prices</div>
-          <div className="feature-description">
-            Check current market prices for your crops and get selling advice
-          </div>
-        </div>
-
-        <div className="feature-card">
-          <div className="feature-icon">🏛️</div>
-          <div className="feature-title">Government Schemes</div>
-          <div className="feature-description">
-            Learn about available government schemes and how to apply
-          </div>
-        </div>
-
-        <div className="feature-card">
-          <div className="feature-icon">🗣️</div>
-          <div className="feature-title">Multi-Dialect Support</div>
-          <div className="feature-description">
-            Speak in your local language - Hindi, Telugu, Punjabi, Bhojpuri, and more
-          </div>
-        </div>
       </div>
     </div>
   )
