@@ -235,6 +235,18 @@ function App() {
         })
       }
       setResponse({ transcript: modalInput, response_text: res.data.text })
+      if (res.data.audio_data) {
+        const audioBlob = new Blob([Uint8Array.from(atob(res.data.audio_data), c => c.charCodeAt(0))], { type: 'audio/wav' })
+        const audioUrl = URL.createObjectURL(audioBlob)
+        setAudioUrl(audioUrl)
+        // Auto-play audio after setting URL
+        setTimeout(() => {
+          if (audioRef.current) {
+            audioRef.current.play()
+            setIsPlaying(true)
+          }
+        }, 100)
+      }
     } catch {
       setError(`Unable to fetch ${modalType} information.`)
     } finally {
@@ -338,11 +350,11 @@ function App() {
             <div className="title">Govt Schemes</div>
             <div className="description">Learn about government schemes available to you.</div>
           </button>
-          <button className="feature-card">
+          {/* <button className="feature-card">
             <div className="icon">🗣</div>
             <div className="title">Multi-Dialect Support</div>
             <div className="description">Speak in your local language – Hindi, Telugu, Punjabi, Bhojpuri, and more.</div>
-          </button>
+          </button> */}
         </div>
 
         {error && <div className="error-message">{error}</div>}

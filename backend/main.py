@@ -494,7 +494,17 @@ async def get_weather(request: WeatherRequest, current_user: dict = Depends(get_
         # Log the query
         await log_user_query(current_user["email"], f"Weather for {request.city}", response_text, "weather")
         
-        return JSONResponse({"text": response_text})
+        # Generate TTS audio
+        audio_data = None
+        try:
+            synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=None)
+            result = synthesizer.speak_text_async(response_text).get()
+            if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
+                audio_data = base64.b64encode(result.audio_data).decode('utf-8')
+        except Exception as tts_error:
+            print(f"TTS error: {tts_error}")
+        
+        return JSONResponse({"text": response_text, "audio_data": audio_data})
     except Exception as e:
         print(f"Weather API error: {e}")
         raise HTTPException(status_code=500, detail="Unable to fetch weather right now.")
@@ -514,7 +524,17 @@ async def get_crop_prices(request: CropPriceRequest, current_user: dict = Depend
         # Log the query
         await log_user_query(current_user["email"], f"Price for {request.crop}", response_text, "crop")
         
-        return JSONResponse({"text": response_text})
+        # Generate TTS audio
+        audio_data = None
+        try:
+            synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=None)
+            result = synthesizer.speak_text_async(response_text).get()
+            if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
+                audio_data = base64.b64encode(result.audio_data).decode('utf-8')
+        except Exception as tts_error:
+            print(f"TTS error: {tts_error}")
+        
+        return JSONResponse({"text": response_text, "audio_data": audio_data})
     except Exception as e:
         print(f"Crop API error: {e}")
         raise HTTPException(status_code=500, detail="Unable to fetch crop prices right now.")
@@ -542,7 +562,17 @@ async def get_gov_schemes(request: SchemeRequest, current_user: dict = Depends(g
         # Log the query
         await log_user_query(current_user["email"], f"Government schemes for {request.topic}", summary, "schemes")
         
-        return JSONResponse({"text": summary})
+        # Generate TTS audio
+        audio_data = None
+        try:
+            synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=None)
+            result = synthesizer.speak_text_async(summary).get()
+            if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
+                audio_data = base64.b64encode(result.audio_data).decode('utf-8')
+        except Exception as tts_error:
+            print(f"TTS error: {tts_error}")
+        
+        return JSONResponse({"text": summary, "audio_data": audio_data})
     except Exception as e:
         print(f"Gov scheme error: {e}")
         raise HTTPException(status_code=500, detail="Unable to fetch government schemes right now.")
