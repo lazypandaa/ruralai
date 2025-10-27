@@ -118,7 +118,15 @@ function App() {
       })
       if (response.data.audio_data) {
         const audioBlob = new Blob([Uint8Array.from(atob(response.data.audio_data), c => c.charCodeAt(0))], { type: 'audio/wav' })
-        setAudioUrl(URL.createObjectURL(audioBlob))
+        const audioUrl = URL.createObjectURL(audioBlob)
+        setAudioUrl(audioUrl)
+        // Auto-play audio after setting URL
+        setTimeout(() => {
+          if (audioRef.current) {
+            audioRef.current.play()
+            setIsPlaying(true)
+          }
+        }, 100)
       }
     } catch (err) {
       setError('Failed to process audio')
@@ -154,7 +162,15 @@ function App() {
       })
       if (response.data.audio_data) {
         const audioBlob = new Blob([Uint8Array.from(atob(response.data.audio_data), c => c.charCodeAt(0))], { type: 'audio/wav' })
-        setAudioUrl(URL.createObjectURL(audioBlob))
+        const audioUrl = URL.createObjectURL(audioBlob)
+        setAudioUrl(audioUrl)
+        // Auto-play audio after setting URL
+        setTimeout(() => {
+          if (audioRef.current) {
+            audioRef.current.play()
+            setIsPlaying(true)
+          }
+        }, 100)
       }
     } catch (err) {
       const errorMessage = err.response?.data?.detail || 'Failed to process text. Please try again.'
