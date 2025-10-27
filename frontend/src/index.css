@@ -76,6 +76,30 @@ body {
   font-weight: 500;
 }
 
+.user-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.profile-btn {
+  background: #3742fa;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+  transition: background 0.3s;
+}
+
+.profile-btn:hover {
+  background: #2f3542;
+}
+
 .logout-btn {
   display: flex;
   align-items: center;
@@ -496,372 +520,237 @@ body {
   100% { transform: rotate(360deg); }
 }
 
-/* Responsive Design */
-@media (max-width: 1024px) {
-  .container {
-    padding: 15px;
-    max-width: 100%;
-  }
-
-  .header {
-    padding: 20px 0;
-    margin-bottom: 20px;
-  }
-
-  .logo {
-    padding: 20px 30px;
-    gap: 15px;
-    flex-direction: column;
-  }
-
-  .logo-content {
-    gap: 15px;
-  }
-
-  .user-info {
-    gap: 10px;
-  }
-
-  .user-details {
-    align-items: center;
-  }
-
-  .logo-icon {
-    font-size: 3.5rem;
-  }
-
-  .logo-text h1 {
-    font-size: 2.5rem;
-  }
-
-  .logo-text p {
-    font-size: 1.1rem;
-  }
-
-  .language-selector {
-    padding: 15px 20px;
-    max-width: 300px;
-  }
-
-  .main-card {
-    padding: 25px;
-  }
-
-  .feature-buttons {
-    gap: 20px;
-  }
-
-  .feature-buttons .feature-card {
-    padding: 20px;
-  }
-
-  .feature-card .icon {
-    font-size: 2.5rem;
-  }
-
-  .feature-card .title {
-    font-size: 1rem;
-  }
-
-  .feature-card .description {
-    font-size: 0.9rem;
-  }
+/* Profile Styles */
+.profile-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
 }
 
-@media (max-width: 768px) {
-  .container {
-    padding: 15px;
-  }
-
-  .header h1 {
-    font-size: 2rem;
-  }
-
-  .header p {
-    font-size: 1rem;
-  }
-
-  .logo {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .user-details {
-    align-items: center;
-  }
-
-  .user-email {
-    font-size: 0.8rem;
-  }
-
-  .user-location {
-    font-size: 0.75rem;
-  }
-
-  .main-card {
-    padding: 20px;
-  }
-
-  .feature-buttons {
-    flex-wrap: wrap;
-    gap: 15px;
-  }
-
-  .feature-buttons .feature-card {
-    min-width: 200px;
-    padding: 18px;
-  }
-
-  .input-mode-selector {
-    max-width: 100%;
-  }
-
-  .mode-button {
-    padding: 10px 20px;
-    font-size: 0.9rem;
-  }
-
-  .voice-button {
-    width: 80px;
-    height: 80px;
-  }
-
-  .status-text {
-    font-size: 0.9rem;
-  }
-
-  .text-input {
-    max-width: 100%;
-    padding: 12px 18px;
-  }
-
-  .submit-button {
-    padding: 12px 30px;
-    font-size: 1rem;
-  }
-
-  .text-controls {
-    flex-direction: column;
-    gap: 15px;
-  }
-
-  .language-selector-inline {
-    padding: 8px 12px;
-  }
-
-  .language-selector-inline select {
-    min-width: 120px;
-    padding: 6px 10px;
-    font-size: 0.8rem;
-  }
-
-  .response-section {
-    padding: 15px;
-  }
-
-  .response-section h3 {
-    font-size: 1rem;
-  }
-
-  .error-message {
-    padding: 12px;
-  }
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 30px;
 }
 
-@media (max-width: 480px) {
-  .header h1 {
-    font-size: 1.8rem;
-  }
-
-  .language-selector {
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .feature-buttons {
-    flex-wrap: wrap;
-    gap: 15px;
-  }
-
-  .feature-buttons .feature-card {
-    padding: 15px;
-    font-size: 0.9rem;
-    min-width: 180px;
-  }
-
-  .feature-card .icon {
-    font-size: 2rem;
-  }
-
-  .feature-card .title {
-    font-size: 0.95rem;
-  }
-
-  .feature-card .description {
-    font-size: 0.85rem;
-  }
-
-  .language-selector select {
-    min-width: 150px;
-    padding: 10px 15px;
-    font-size: 0.9rem;
-  }
-
-  .mode-button {
-    padding: 8px 15px;
-    font-size: 0.8rem;
-  }
-
-  .voice-button {
-    width: 70px;
-    height: 70px;
-  }
-
-  .status-text {
-    font-size: 0.85rem;
-  }
-
-  .text-input {
-    padding: 10px 15px;
-    font-size: 0.9rem;
-  }
-
-  .submit-button {
-    padding: 10px 25px;
-    font-size: 0.95rem;
-  }
-
-  .response-section {
-    padding: 12px;
-  }
-
-  .response-section h3 {
-    font-size: 0.95rem;
-  }
-
-  .error-message {
-    padding: 10px;
-    font-size: 0.9rem;
-  }
+.back-button {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  transition: background 0.3s;
 }
 
-@media (max-width: 360px) {
-  .container {
-    padding: 10px;
-  }
+.back-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
 
-  .header {
-    padding: 15px 0;
-    margin-bottom: 15px;
-  }
+.profile-header h2 {
+  color: white;
+  margin: 0;
+  font-size: 28px;
+}
 
-  .logo {
-    padding: 15px 20px;
-    gap: 10px;
-    flex-direction: column;
-  }
+.profile-card {
+  background: white;
+  border-radius: 15px;
+  padding: 30px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
 
-  .logo-content {
-    gap: 10px;
-  }
+.profile-section {
+  margin-bottom: 40px;
+}
 
-  .user-info {
-    gap: 8px;
-  }
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
 
-  .logout-btn {
-    padding: 8px;
-  }
+.section-header h3 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 20px;
+}
 
-  .logo-icon {
-    font-size: 2.5rem;
-  }
+.edit-button {
+  background: #3742fa;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+  transition: background 0.3s;
+}
 
-  .logo-text h1 {
-    font-size: 1.5rem;
-  }
+.edit-button:hover {
+  background: #2f3542;
+}
 
-  .logo-text p {
-    font-size: 0.9rem;
-  }
+.edit-actions {
+  display: flex;
+  gap: 10px;
+}
 
-  .language-selector {
-    padding: 12px 15px;
-    max-width: 100%;
-  }
+.save-button {
+  background: #2ed573;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+  transition: background 0.3s;
+}
 
-  .language-selector select {
-    min-width: 120px;
-    padding: 8px 12px;
-    font-size: 0.8rem;
-  }
+.save-button:hover {
+  background: #26d065;
+}
 
-  .main-card {
-    padding: 15px;
-  }
+.save-button:disabled {
+  background: #95a5a6;
+  cursor: not-allowed;
+}
 
-  .input-mode-selector {
-    padding: 6px;
-  }
+.cancel-button {
+  background: #ff4757;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+  transition: background 0.3s;
+}
 
-  .mode-button {
-    padding: 6px 12px;
-    font-size: 0.75rem;
-  }
+.cancel-button:hover {
+  background: #ff3742;
+}
 
-  .voice-button {
-    width: 60px;
-    height: 60px;
-  }
+.profile-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
 
-  .status-text {
-    font-size: 0.8rem;
-  }
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
-  .text-input {
-    padding: 8px 12px;
-    font-size: 0.85rem;
-  }
+.field label {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 14px;
+}
 
-  .submit-button {
-    padding: 8px 20px;
-    font-size: 0.9rem;
-  }
+.field input,
+.field select {
+  padding: 12px;
+  border: 2px solid #e1e8ed;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.3s;
+}
 
-  .feature-buttons {
-    gap: 10px;
-  }
+.field input:focus,
+.field select:focus {
+  outline: none;
+  border-color: #3742fa;
+}
 
-  .feature-buttons .feature-card {
-    padding: 12px;
-    font-size: 0.8rem;
-    min-width: 140px;
-  }
+.field span {
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  color: #2c3e50;
+  font-size: 16px;
+}
 
-  .feature-card .icon {
-    font-size: 1.8rem;
-  }
+.queries-section h3 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+  font-size: 20px;
+}
 
-  .feature-card .title {
-    font-size: 0.9rem;
-  }
+.no-queries {
+  text-align: center;
+  color: #7f8c8d;
+  font-style: italic;
+  padding: 40px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
 
-  .feature-card .description {
-    font-size: 0.8rem;
-  }
+.queries-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  max-height: 400px;
+  overflow-y: auto;
+}
 
-  .response-section {
-    padding: 10px;
-  }
+.query-item {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 15px;
+  border-left: 4px solid #3742fa;
+}
 
-  .response-section h3 {
-    font-size: 0.9rem;
-  }
+.query-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
 
-  .error-message {
-    padding: 8px;
-    font-size: 0.85rem;
-  }
+.query-type {
+  background: #3742fa;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.query-date {
+  color: #7f8c8d;
+  font-size: 12px;
+}
+
+.query-text {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 8px;
+}
+
+.query-response {
+  color: #7f8c8d;
+  font-size: 14px;
+  line-height: 1.4;
 }
 
 /* Modal Styles */
@@ -985,7 +874,7 @@ body {
   justify-content: flex-end;
 }
 
-.cancel-button {
+.modal-footer .cancel-button {
   padding: 12px 24px;
   background: #f5f5f5;
   color: #666;
@@ -997,7 +886,7 @@ body {
   transition: all 0.2s ease;
 }
 
-.cancel-button:hover {
+.modal-footer .cancel-button:hover {
   background: #e0e0e0;
   transform: translateY(-1px);
 }
@@ -1267,8 +1156,196 @@ body {
   color: #5a4abd;
 }
 
-/* Mobile Auth Styles */
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .container {
+    padding: 15px;
+    max-width: 100%;
+  }
+
+  .header {
+    padding: 20px 0;
+    margin-bottom: 20px;
+  }
+
+  .logo {
+    padding: 20px 30px;
+    gap: 15px;
+    flex-direction: column;
+  }
+
+  .logo-content {
+    gap: 15px;
+  }
+
+  .user-info {
+    gap: 10px;
+  }
+
+  .user-details {
+    align-items: center;
+  }
+
+  .logo-icon {
+    font-size: 3.5rem;
+  }
+
+  .logo-text h1 {
+    font-size: 2.5rem;
+  }
+
+  .logo-text p {
+    font-size: 1.1rem;
+  }
+
+  .language-selector {
+    padding: 15px 20px;
+    max-width: 300px;
+  }
+
+  .main-card {
+    padding: 25px;
+  }
+
+  .feature-buttons {
+    gap: 20px;
+  }
+
+  .feature-buttons .feature-card {
+    padding: 20px;
+  }
+
+  .feature-card .icon {
+    font-size: 2.5rem;
+  }
+
+  .feature-card .title {
+    font-size: 1rem;
+  }
+
+  .feature-card .description {
+    font-size: 0.9rem;
+  }
+}
+
 @media (max-width: 768px) {
+  .container {
+    padding: 15px;
+  }
+
+  .header h1 {
+    font-size: 2rem;
+  }
+
+  .header p {
+    font-size: 1rem;
+  }
+
+  .logo {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .user-details {
+    align-items: center;
+  }
+
+  .user-email {
+    font-size: 0.8rem;
+  }
+
+  .user-location {
+    font-size: 0.75rem;
+  }
+
+  .main-card {
+    padding: 20px;
+  }
+
+  .feature-buttons {
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+
+  .feature-buttons .feature-card {
+    min-width: 200px;
+    padding: 18px;
+  }
+
+  .input-mode-selector {
+    max-width: 100%;
+  }
+
+  .mode-button {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+  }
+
+  .voice-button {
+    width: 80px;
+    height: 80px;
+  }
+
+  .status-text {
+    font-size: 0.9rem;
+  }
+
+  .text-input {
+    max-width: 100%;
+    padding: 12px 18px;
+  }
+
+  .submit-button {
+    padding: 12px 30px;
+    font-size: 1rem;
+  }
+
+  .text-controls {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .language-selector-inline {
+    padding: 8px 12px;
+  }
+
+  .language-selector-inline select {
+    min-width: 120px;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+
+  .response-section {
+    padding: 15px;
+  }
+
+  .response-section h3 {
+    font-size: 1rem;
+  }
+
+  .error-message {
+    padding: 12px;
+  }
+
+  .profile-container {
+    padding: 15px;
+  }
+  
+  .profile-card {
+    padding: 20px;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .edit-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
   .auth-container {
     padding: 15px;
   }
@@ -1308,10 +1385,7 @@ body {
     padding: 14px 20px;
     font-size: 1rem;
   }
-}
 
-/* Mobile Modal Styles */
-@media (max-width: 768px) {
   .modal-content {
     width: 95%;
     margin: 20px;
@@ -1338,5 +1412,201 @@ body {
   .modal-footer .submit-button {
     width: 100%;
     padding: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header h1 {
+    font-size: 1.8rem;
+  }
+
+  .language-selector {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .feature-buttons {
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+
+  .feature-buttons .feature-card {
+    padding: 15px;
+    font-size: 0.9rem;
+    min-width: 180px;
+  }
+
+  .feature-card .icon {
+    font-size: 2rem;
+  }
+
+  .feature-card .title {
+    font-size: 0.95rem;
+  }
+
+  .feature-card .description {
+    font-size: 0.85rem;
+  }
+
+  .language-selector select {
+    min-width: 150px;
+    padding: 10px 15px;
+    font-size: 0.9rem;
+  }
+
+  .mode-button {
+    padding: 8px 15px;
+    font-size: 0.8rem;
+  }
+
+  .voice-button {
+    width: 70px;
+    height: 70px;
+  }
+
+  .status-text {
+    font-size: 0.85rem;
+  }
+
+  .text-input {
+    padding: 10px 15px;
+    font-size: 0.9rem;
+  }
+
+  .submit-button {
+    padding: 10px 25px;
+    font-size: 0.95rem;
+  }
+
+  .response-section {
+    padding: 12px;
+  }
+
+  .response-section h3 {
+    font-size: 0.95rem;
+  }
+
+  .error-message {
+    padding: 10px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .container {
+    padding: 10px;
+  }
+
+  .header {
+    padding: 15px 0;
+    margin-bottom: 15px;
+  }
+
+  .logo {
+    padding: 15px 20px;
+    gap: 10px;
+    flex-direction: column;
+  }
+
+  .logo-content {
+    gap: 10px;
+  }
+
+  .user-info {
+    gap: 8px;
+  }
+
+  .logout-btn {
+    padding: 8px;
+  }
+
+  .logo-icon {
+    font-size: 2.5rem;
+  }
+
+  .logo-text h1 {
+    font-size: 1.5rem;
+  }
+
+  .logo-text p {
+    font-size: 0.9rem;
+  }
+
+  .language-selector {
+    padding: 12px 15px;
+    max-width: 100%;
+  }
+
+  .language-selector select {
+    min-width: 120px;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+
+  .main-card {
+    padding: 15px;
+  }
+
+  .input-mode-selector {
+    padding: 6px;
+  }
+
+  .mode-button {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+
+  .voice-button {
+    width: 60px;
+    height: 60px;
+  }
+
+  .status-text {
+    font-size: 0.8rem;
+  }
+
+  .text-input {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+
+  .submit-button {
+    padding: 8px 20px;
+    font-size: 0.9rem;
+  }
+
+  .feature-buttons {
+    gap: 10px;
+  }
+
+  .feature-buttons .feature-card {
+    padding: 12px;
+    font-size: 0.8rem;
+    min-width: 140px;
+  }
+
+  .feature-card .icon {
+    font-size: 1.8rem;
+  }
+
+  .feature-card .title {
+    font-size: 0.9rem;
+  }
+
+  .feature-card .description {
+    font-size: 0.8rem;
+  }
+
+  .response-section {
+    padding: 10px;
+  }
+
+  .response-section h3 {
+    font-size: 0.9rem;
+  }
+
+  .error-message {
+    padding: 8px;
+    font-size: 0.85rem;
   }
 }

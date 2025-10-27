@@ -22,6 +22,7 @@ MONGO_URL = "mongodb+srv://gramvani_user:GramVaani123!@firewall.jchsp.mongodb.ne
 client_mongo = AsyncIOMotorClient(MONGO_URL)
 db = client_mongo.gramvani
 users_collection = db.user
+user_queries_collection = db.user_queries
 
 print("MongoDB connection initialized with gramvani_user")
 
@@ -72,6 +73,16 @@ class Token(BaseModel):
 
 class LocationRequest(BaseModel):
     ip: Optional[str] = None
+
+class ProfileUpdate(BaseModel):
+    email: EmailStr
+    language: str
+    location: str
+
+class QueryLog(BaseModel):
+    query: str
+    response: Optional[str] = None
+    type: str = "general"
 
 # ---------------------- AUTH FUNCTIONS ----------------------
 def verify_password(plain_password, hashed_password):
@@ -194,6 +205,54 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         "language": current_user["language"],
         "location": current_user["location"]
     }
+
+@app.put("/api/profile")
+async def update_profile(profile_data: ProfileUpdate, current_user: dict = Depends(get_current_user)):
+    try:
+        await users_collection.update_one(
+            {"email": current_user["email"]},
+            {"$set": {
+                "email": profile_data.email,
+                "language": profile_data.language,
+                "location": profile_data.location,
+                "updated_at": datetime.utcnow()
+            }}
+        )
+        return {"message": "Profile updated successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to update profile")
+
+@app.post("/api/log-query")
+async def log_query(query_data: QueryLog, current_user: dict = Depends(get_current_user)):
+    try:
+        query_doc = {
+            "user_email": current_user["email"],
+            "query": query_data.query,
+            "response": query_data.response,
+            "type": query_data.type,
+            "timestamp": datetime.utcnow()
+        }
+        await user_queries_collection.insert_one(query_doc)
+        return {"message": "Query logged successfully"}
+    except Exception as e:
+        print(f"Query logging error: {e}")
+        return {"message": "Query logging failed"}
+
+@app.get("/api/user-queries")
+async def get_user_queries(current_user: dict = Depends(get_current_user)):
+    try:
+        queries = await user_queries_collection.find(
+            {"user_email": current_user["email"]}
+        ).sort("timestamp", -1).limit(50).to_list(50)
+        
+        # Convert ObjectId to string for JSON serialization
+        for query in queries:
+            query["_id"] = str(query["_id"])
+            
+        return {"queries": queries}
+    except Exception as e:
+        print(f"Fetch queries error: {e}")
+        return {"queries": []}
 
 # Temporary in-memory storage as fallback
 temp_users = {}
@@ -326,11 +385,17 @@ async def process_audio(file: UploadFile = File(...), language: str = "en", curr
                 )
                 response_text = response.choices[0].message.content
                 print(f"Azure OpenAI response generated successfully")
+                
+                # Log the query
+                await log_user_query(current_user["email"], transcript, response_text, "voice")
             except Exception as azure_error:
                 print(f"Azure OpenAI error: {azure_error}")
                 response_text = "I'm here to help you with farming, weather, and government schemes. Please try again."
         else:
             response_text = "I couldn't understand your audio. Please try speaking more clearly or use the text input option."
+            
+            # Log failed audio query
+            await log_user_query(current_user["email"], "Audio processing failed", response_text, "voice")
 
         # Generate TTS audio
         audio_data = None
@@ -380,6 +445,9 @@ async def process_text(request: TextRequest, current_user: dict = Depends(get_cu
         )
         response_text = response.choices[0].message.content
         print(f"Text processing successful for: {request.text}")
+        
+        # Log the query
+        await log_user_query(current_user["email"], request.text, response_text, "text")
 
         # Generate TTS audio
         audio_data = None
@@ -422,7 +490,10 @@ async def get_weather(request: WeatherRequest, current_user: dict = Depends(get_
         temp = data["main"]["temp"]
         humidity = data["main"]["humidity"]
         response_text = f"The current weather in {request.city} is {weather_desc} with a temperature of {temp}°C and humidity {humidity}%."
-
+        
+        # Log the query
+        await log_user_query(current_user["email"], f"Weather for {request.city}", response_text, "weather")
+        
         return JSONResponse({"text": response_text})
     except Exception as e:
         print(f"Weather API error: {e}")
@@ -439,6 +510,10 @@ async def get_crop_prices(request: CropPriceRequest, current_user: dict = Depend
     try:
         # Simulated response
         response_text = f"The latest price for {request.crop} in {request.market} is ₹{round(2500 + hash(request.crop) % 500)} per quintal."
+        
+        # Log the query
+        await log_user_query(current_user["email"], f"Price for {request.crop}", response_text, "crop")
+        
         return JSONResponse({"text": response_text})
     except Exception as e:
         print(f"Crop API error: {e}")
@@ -463,7 +538,25 @@ async def get_gov_schemes(request: SchemeRequest, current_user: dict = Depends(g
             temperature=0.7
         )
         summary = response.choices[0].message.content
+        
+        # Log the query
+        await log_user_query(current_user["email"], f"Government schemes for {request.topic}", summary, "schemes")
+        
         return JSONResponse({"text": summary})
     except Exception as e:
         print(f"Gov scheme error: {e}")
         raise HTTPException(status_code=500, detail="Unable to fetch government schemes right now.")
+
+# Helper function to log queries
+async def log_user_query(user_email: str, query: str, response: str = None, query_type: str = "general"):
+    try:
+        query_doc = {
+            "user_email": user_email,
+            "query": query,
+            "response": response,
+            "type": query_type,
+            "timestamp": datetime.utcnow()
+        }
+        await user_queries_collection.insert_one(query_doc)
+    except Exception as e:
+        print(f"Auto query logging error: {e}")

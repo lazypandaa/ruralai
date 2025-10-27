@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Mic, MicOff, Play, Pause, Loader, LogOut } from 'lucide-react'
+import { Mic, MicOff, Play, Pause, Loader, LogOut, User } from 'lucide-react'
 import axios from 'axios'
 import Auth from './Auth'
+import Profile from './Profile'
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -18,6 +19,7 @@ function App() {
   const [showModal, setShowModal] = useState(false)
   const [modalType, setModalType] = useState('')
   const [modalInput, setModalInput] = useState('')
+  const [showProfile, setShowProfile] = useState(false)
 
   const mediaRecorderRef = useRef(null)
   const audioRef = useRef(null)
@@ -180,7 +182,13 @@ function App() {
   // -------------------- Modal Handlers --------------------
   const openModal = (type) => {
     setModalType(type)
-    setModalInput('')
+    // Pre-fill user's city for weather
+    if (type === 'weather' && user?.location) {
+      const city = user.location.split(',')[0].trim() // Extract city from "Markapur, Andhra Pradesh"
+      setModalInput(city)
+    } else {
+      setModalInput('')
+    }
     setShowModal(true)
   }
 
@@ -223,6 +231,16 @@ function App() {
     return <Auth onLogin={handleLogin} />
   }
 
+  if (showProfile) {
+    return (
+      <Profile 
+        user={user} 
+        onBack={() => setShowProfile(false)}
+        onUserUpdate={(updatedUser) => setUser({...user, ...updatedUser})}
+      />
+    )
+  }
+
   return (
     <div className="container">
       <div className="header">
@@ -237,9 +255,14 @@ function App() {
               <span className="user-email">{user?.email}</span>
               <span className="user-location">📍 {user?.location}</span>
             </div>
-            <button onClick={handleLogout} className="logout-btn">
-              <LogOut size={20} />
-            </button>
+            <div className="user-actions">
+              <button onClick={() => setShowProfile(true)} className="profile-btn">
+                <User size={20} />
+              </button>
+              <button onClick={handleLogout} className="logout-btn">
+                <LogOut size={20} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
