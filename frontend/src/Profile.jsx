@@ -181,6 +181,7 @@ function Profile({ user, onBack, onUserUpdate }) {
                         <option value="mr">🇮🇳 Marathi</option>
                         <option value="bn">🇮🇳 Bengali</option>
                         <option value="ta">🇮🇳 Tamil</option>
+                        <option value="te">🇮🇳 Telugu</option>
                       </select>
                     ) : (
                       <div className="field-value">
@@ -189,6 +190,7 @@ function Profile({ user, onBack, onUserUpdate }) {
                         {editData.language === 'mr' && '🇮🇳 Marathi'}
                         {editData.language === 'bn' && '🇮🇳 Bengali'}
                         {editData.language === 'ta' && '🇮🇳 Tamil'}
+                        {editData.language === 'te' && '🇮🇳 Telugu'}
                       </div>
                     )}
                   </div>

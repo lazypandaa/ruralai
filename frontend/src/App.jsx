@@ -319,6 +319,7 @@ function App() {
                 <option value="mr">🇮🇳 Marathi</option>
                 <option value="bn">🇮🇳 Bengali</option>
                 <option value="ta">🇮🇳 Tamil</option>
+                <option value="te">🇮🇳 Telugu</option>
               </select>
             </div>
           </div>
@@ -337,6 +338,7 @@ function App() {
                   <option value="mr">🇮🇳 Marathi</option>
                   <option value="bn">🇮🇳 Bengali</option>
                   <option value="ta">🇮🇳 Tamil</option>
+                  <option value="te">🇮🇳 Telugu</option>
                 </select>
               </div>
             </div>

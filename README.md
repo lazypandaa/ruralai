@@ -1,69 +1,42 @@
-# Gram Vaani - AI Voice Assistant for Rural India
+# 🌾 Gram Vaani - AI Voice Assistant
 
-## 🌾 Bridging the Digital Dialect Divide
+## Quick Setup
 
-Gram Vaani is a lightweight, AI-powered voice assistant designed specifically for rural Indian users. It understands local dialects, provides real-time information about weather, crop prices, and government schemes, and responds in a voice format that users can easily understand.
-
-## 🎯 Problem Statement
-
-In rapidly digitizing India, access to information is still a privilege of those who speak mainstream languages. For millions in rural areas, local dialects are the primary mode of communication, creating a "digital dialect divide." This linguistic barrier excludes them from critical information about:
-
-- Weather forecasts that affect their crops
-- Real-time market prices for their produce  
-- Vital health services
-- Essential government schemes designed for their benefit
-
-## 🚀 Solution
-
-Gram Vaani acts as a bridge, not a barrier:
-
-- **It Listens**: Understands native dialects using OpenAI's Whisper
-- **It Understands**: Uses GPT-4's advanced reasoning to grasp user intent
-- **It Informs**: Fetches live, relevant information from reliable sources
-- **It Responds**: Provides clear answers in voice and text format
-
-## 🏗️ System Architecture
-
-```
-User → Frontend (React) → Backend (FastAPI) → AI Services (OpenAI)
-                                    ↓
-                            External APIs (Weather, Markets)
-                                    ↓
-                            Local Database (Govt Schemes)
-```
-
-## 🛠️ Tech Stack
-
-- **Frontend**: React + Vite
-- **Backend**: Python + FastAPI
-- **ASR**: OpenAI Whisper API
-- **NLU**: OpenAI GPT-4 API
-- **TTS**: OpenAI TTS API
-- **Data Sources**: OpenWeatherMap, Government APIs, Local Database
-
-## 🚀 Quick Start
-
-### Backend Setup
+### 1. Backend Setup
 ```bash
 cd backend
 pip install -r requirements.txt
-uvicorn main:app --reload
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Frontend Setup
+### 2. Frontend Setup (New Terminal)
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-## 📱 Features
+## Troubleshooting
 
-- Multi-dialect voice recognition
-- Real-time weather information
-- Crop price updates
-- Government scheme information
-- Offline-capable design
-- Mobile-first interface
+### Error: `net::ERR_CONNECTION_REFUSED`
+**Solution:** Backend server is not running
+1. Open terminal in `backend` folder
+2. Run: `uvicorn main:app --reload --host 0.0.0.0 --port 8000`
+3. Wait for "Application startup complete"
+4. Then start frontend
 
-## 🏆 Built for OpenAI X NXT Buildathon
+### Error: `password cannot be longer than 72 bytes`
+**Solution:** Use shorter passwords (under 72 characters)
+
+### Error: MongoDB connection failed
+**Solution:** Check internet connection and MongoDB Atlas access
+
+## Required Services
+- MongoDB Atlas (cloud database)
+- Azure OpenAI API
+- Azure Speech Services
+- OpenWeather API
+
+## Default URLs
+- Frontend: http://localhost:5173
+- Backend: http://localhost:8000

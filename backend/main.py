@@ -84,6 +84,18 @@ class QueryLog(BaseModel):
     response: Optional[str] = None
     type: str = "general"
 
+# ---------------------- LANGUAGE MAPPING ----------------------
+def get_language_name(lang_code):
+    language_map = {
+        "en": "English",
+        "hi": "Hindi (हिंदी)",
+        "mr": "Marathi (मराठी)", 
+        "bn": "Bengali (বাংলা)",
+        "ta": "Tamil (தமிழ்)",
+        "te": "Telugu (తెలుగు)"
+    }
+    return language_map.get(lang_code, "English")
+
 # ---------------------- AUTH FUNCTIONS ----------------------
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -378,10 +390,20 @@ async def process_audio(file: UploadFile = File(...), language: str = "en", curr
         transcript = None
         try:
             with open(temp_file_path, "rb") as audio_file:
+                # Map language codes to Whisper language codes
+                whisper_lang_map = {
+                    'hi': 'hi',  # Hindi
+                    'mr': 'mr',  # Marathi  
+                    'bn': 'bn',  # Bengali
+                    'ta': 'ta',  # Tamil
+                    'te': 'te'   # Telugu
+                }
+                whisper_language = whisper_lang_map.get(language) if language != 'en' else None
+                
                 response = azure_client.audio.transcriptions.create(
                     model="whisper",
                     file=audio_file,
-                    language=language if language != 'en' else None
+                    language=whisper_language
                 )
                 transcript = response.text
                 print(f"Azure Whisper transcription successful: {transcript}")
@@ -391,18 +413,67 @@ async def process_audio(file: UploadFile = File(...), language: str = "en", curr
 
         # Get Azure OpenAI response only if we have valid transcript
         if transcript and "Could not understand" not in transcript:
-            messages = [
-                {"role": "system", "content": f"You are a helpful assistant for rural India focused on farming, weather, crops, and government schemes. Respond in simple, clear language. Use language: {language}."},
-                {"role": "user", "content": transcript}
-            ]
-            try:
+            user_location = current_user.get("location", "India")
+            
+            # For non-English languages, use translation approach
+            if language != 'en':
+                # Step 1: Translate user input to English
+                translate_to_english = azure_client.chat.completions.create(
+                    model=azure_deployment,
+                    messages=[
+                        {"role": "system", "content": "Translate the following text to English. Only provide the translation, nothing else."},
+                        {"role": "user", "content": transcript}
+                    ],
+                    max_tokens=500,
+                    temperature=0.3
+                )
+                english_text = translate_to_english.choices[0].message.content.strip()
+                
+                # Step 2: Get response in English
+                english_response = azure_client.chat.completions.create(
+                    model=azure_deployment,
+                    messages=[
+                        {"role": "system", "content": f"You are Gram Vaani, AI Voice Assistant for Rural India. You help with farming, weather, crops, and government schemes. The user is located in {user_location}. Provide helpful, location-specific advice."},
+                        {"role": "user", "content": english_text}
+                    ],
+                    max_tokens=1000,
+                    temperature=0.7
+                )
+                english_answer = english_response.choices[0].message.content
+                
+                # Step 3: Translate response to target language with specific script instructions
+                if language == 'hi':
+                    translate_instruction = "Translate the following English text to Hindi using Devanagari script only (हिंदी). Do NOT use Arabic/Urdu script. Only provide the Hindi translation in Devanagari script."
+                elif language == 'te':
+                    translate_instruction = "Translate the following English text to Telugu using Telugu script only (తెలుగు). Only provide the Telugu translation."
+                else:
+                    language_name = get_language_name(language)
+                    translate_instruction = f"Translate the following English text to {language_name}. Use proper native script. Only provide the translation, nothing else."
+                    
+                translate_response = azure_client.chat.completions.create(
+                    model=azure_deployment,
+                    messages=[
+                        {"role": "system", "content": translate_instruction},
+                        {"role": "user", "content": english_answer}
+                    ],
+                    max_tokens=1000,
+                    temperature=0.3
+                )
+                response_text = translate_response.choices[0].message.content.strip()
+            else:
+                # For English, direct response
+                messages = [
+                    {"role": "system", "content": f"You are Gram Vaani, AI Voice Assistant for Rural India. You help with farming, weather, crops, and government schemes. The user is located in {user_location}. Provide helpful, location-specific advice."},
+                    {"role": "user", "content": transcript}
+                ]
                 response = azure_client.chat.completions.create(
                     model=azure_deployment,
                     messages=messages,
-                    max_tokens=4096,
+                    max_tokens=1000,
                     temperature=0.7
                 )
                 response_text = response.choices[0].message.content
+            try:
                 print(f"Azure OpenAI response generated successfully")
                 
                 # Log the query
@@ -452,17 +523,67 @@ class TextRequest(BaseModel):
 @app.post("/process-text")
 async def process_text(request: TextRequest, current_user: dict = Depends(get_current_user)):
     try:
-        messages = [
-            {"role": "system", "content": f"You are a helpful assistant for rural India focused on farming, weather, crops, and government schemes. Respond in simple, clear language. Use language: {request.language}."},
-            {"role": "user", "content": request.text}
-        ]
-        response = azure_client.chat.completions.create(
-            model=azure_deployment,
-            messages=messages,
-            max_tokens=4096,
-            temperature=0.7
-        )
-        response_text = response.choices[0].message.content
+        user_location = current_user.get("location", "India")
+        
+        # For non-English languages, use translation approach
+        if request.language != 'en':
+            # Step 1: Translate user input to English
+            translate_to_english = azure_client.chat.completions.create(
+                model=azure_deployment,
+                messages=[
+                    {"role": "system", "content": "Translate the following text to English. Only provide the translation, nothing else."},
+                    {"role": "user", "content": request.text}
+                ],
+                max_tokens=500,
+                temperature=0.3
+            )
+            english_text = translate_to_english.choices[0].message.content.strip()
+            
+            # Step 2: Get response in English
+            english_response = azure_client.chat.completions.create(
+                model=azure_deployment,
+                messages=[
+                    {"role": "system", "content": f"You are Gram Vaani, AI Voice Assistant for Rural India. You help with farming, weather, crops, and government schemes. The user is located in {user_location}. Provide helpful, location-specific advice."},
+                    {"role": "user", "content": english_text}
+                ],
+                max_tokens=1000,
+                temperature=0.7
+            )
+            english_answer = english_response.choices[0].message.content
+            
+            # Step 3: Translate response to target language with specific script instructions
+            if request.language == 'hi':
+                translate_instruction = "Translate the following English text to Hindi using Devanagari script only (हिंदी). Do NOT use Arabic/Urdu script. Only provide the Hindi translation in Devanagari script."
+            elif request.language == 'te':
+                translate_instruction = "Translate the following English text to Telugu using Telugu script only (తెలుగు). Only provide the Telugu translation."
+            else:
+                language_name = get_language_name(request.language)
+                translate_instruction = f"Translate the following English text to {language_name}. Use proper native script. Only provide the translation, nothing else."
+                
+            translate_response = azure_client.chat.completions.create(
+                model=azure_deployment,
+                messages=[
+                    {"role": "system", "content": translate_instruction},
+                    {"role": "user", "content": english_answer}
+                ],
+                max_tokens=1000,
+                temperature=0.3
+            )
+            response_text = translate_response.choices[0].message.content.strip()
+        else:
+            # For English, direct response
+            messages = [
+                {"role": "system", "content": f"You are Gram Vaani, AI Voice Assistant for Rural India. You help with farming, weather, crops, and government schemes. The user is located in {user_location}. Provide helpful, location-specific advice."},
+                {"role": "user", "content": request.text}
+            ]
+            response = azure_client.chat.completions.create(
+                model=azure_deployment,
+                messages=messages,
+                max_tokens=1000,
+                temperature=0.7
+            )
+            response_text = response.choices[0].message.content
+        
         print(f"Text processing successful for: {request.text}")
         
         # Log the query
@@ -568,8 +689,9 @@ class SchemeRequest(BaseModel):
 @app.post("/api/gov-schemes")
 async def get_gov_schemes(request: SchemeRequest, current_user: dict = Depends(get_current_user)):
     try:
+        language_name = get_language_name(request.language)
         messages = [
-            {"role": "system", "content": f"You are a helpful assistant for Indian farmers. Provide info about government schemes related to agriculture in simple terms. Respond in language: {request.language}."},
+            {"role": "system", "content": f"You are Gram Vaani, AI Voice Assistant for Rural India. You are professional in providing information in efficient and effective manner for the rural area people. Provide info about government schemes related to agriculture in simple terms. IMPORTANT: Respond ONLY in {language_name}. Do not use any other language or script."},
             {"role": "user", "content": f"Tell me about government schemes related to {request.topic}."}
         ]
         response = azure_client.chat.completions.create(
