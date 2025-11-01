@@ -13,24 +13,70 @@ function Auth({ onLogin }) {
     location: ''
   })
   const [isDetectingLocation, setIsDetectingLocation] = useState(false)
+  const [locationMethod, setLocationMethod] = useState('')
 
-  const detectLocation = async () => {
+  const detectPreciseLocation = async () => {
     setIsDetectingLocation(true)
+    setLocationMethod('Getting GPS location...')
+    
+    try {
+      // First try GPS location
+      if (navigator.geolocation) {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            resolve,
+            reject,
+            {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 300000 // 5 minutes
+            }
+          )
+        })
+        
+        const { latitude, longitude } = position.coords
+        setLocationMethod('Getting address details...')
+        
+        // Reverse geocode using backend
+        const response = await axios.post('http://localhost:8000/api/reverse-geocode', {
+          latitude,
+          longitude
+        })
+        
+        if (response.data.address) {
+          setFormData(prev => ({ 
+            ...prev, 
+            location: response.data.address,
+            coordinates: { latitude, longitude }
+          }))
+          setLocationMethod('GPS location detected')
+          return
+        }
+      }
+    } catch (gpsError) {
+      console.log('GPS location failed, trying IP location:', gpsError)
+      setLocationMethod('Using IP location...')
+    }
+    
+    // Fallback to IP-based location
     try {
       const response = await axios.get('http://localhost:8000/api/location')
       if (response.data.location) {
         setFormData(prev => ({ ...prev, location: response.data.location }))
+        setLocationMethod('IP-based location')
       }
     } catch (err) {
-      console.error('Location detection failed:', err)
+      console.error('All location detection failed:', err)
+      setLocationMethod('Location detection failed')
     } finally {
       setIsDetectingLocation(false)
+      setTimeout(() => setLocationMethod(''), 3000)
     }
   }
 
   useEffect(() => {
     if (!isLogin) {
-      detectLocation()
+      detectPreciseLocation()
     }
   }, [isLogin])
 
@@ -151,7 +197,7 @@ function Auth({ onLogin }) {
                   <input
                     type="text"
                     name="location"
-                    placeholder="Location (auto-detected)"
+                    placeholder="Location (GPS auto-detected)"
                     value={formData.location}
                     onChange={handleInputChange}
                     required
@@ -159,13 +205,19 @@ function Auth({ onLogin }) {
                   />
                   <button
                     type="button"
-                    onClick={detectLocation}
+                    onClick={detectPreciseLocation}
                     disabled={isDetectingLocation}
                     className="location-btn"
+                    title="Get precise GPS location"
                   >
-                    {isDetectingLocation ? <Loader className="loading" size={16} /> : '📍'}
+                    {isDetectingLocation ? <Loader className="loading" size={16} /> : '🎯'}
                   </button>
                 </div>
+                {locationMethod && (
+                  <div className="location-status">
+                    {locationMethod}
+                  </div>
+                )}
               </div>
             </>
           )}

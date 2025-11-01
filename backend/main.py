@@ -62,6 +62,7 @@ class UserSignup(BaseModel):
     password: str
     language: str
     location: str
+    coordinates: Optional[dict] = None
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -73,6 +74,10 @@ class Token(BaseModel):
 
 class LocationRequest(BaseModel):
     ip: Optional[str] = None
+
+class ReverseGeocodeRequest(BaseModel):
+    latitude: float
+    longitude: float
 
 class ProfileUpdate(BaseModel):
     email: EmailStr
@@ -154,6 +159,79 @@ async def get_location():
         print(f"Location API error: {e}")
         return {"location": "Location not available"}
 
+@app.post("/api/reverse-geocode")
+async def reverse_geocode(request: ReverseGeocodeRequest):
+    try:
+        # Using OpenStreetMap Nominatim for reverse geocoding (free service)
+        url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={request.latitude}&lon={request.longitude}&zoom=18&addressdetails=1"
+        
+        headers = {
+            'User-Agent': 'GramVaani-App/1.0 (contact@gramvaani.com)'
+        }
+        
+        response = requests.get(url, headers=headers, timeout=10)
+        
+        if response.status_code == 200:
+            data = response.json()
+            
+            if 'address' in data:
+                address_parts = data['address']
+                
+                # Extract relevant address components
+                village = address_parts.get('village', '')
+                town = address_parts.get('town', '')
+                city = address_parts.get('city', '')
+                district = address_parts.get('state_district', '')
+                state = address_parts.get('state', '')
+                country = address_parts.get('country', '')
+                postcode = address_parts.get('postcode', '')
+                
+                # Build a comprehensive address
+                address_components = []
+                
+                if village:
+                    address_components.append(village)
+                elif town:
+                    address_components.append(town)
+                elif city:
+                    address_components.append(city)
+                    
+                if district and district not in address_components:
+                    address_components.append(district)
+                    
+                if state:
+                    address_components.append(state)
+                    
+                if postcode:
+                    address_components.append(postcode)
+                
+                precise_address = ', '.join(filter(None, address_components))
+                
+                return {
+                    "address": precise_address,
+                    "coordinates": {
+                        "latitude": request.latitude,
+                        "longitude": request.longitude
+                    },
+                    "details": {
+                        "village": village,
+                        "town": town,
+                        "city": city,
+                        "district": district,
+                        "state": state,
+                        "country": country,
+                        "postcode": postcode
+                    }
+                }
+            else:
+                return {"address": f"Coordinates: {request.latitude:.4f}, {request.longitude:.4f}"}
+        else:
+            return {"address": f"Coordinates: {request.latitude:.4f}, {request.longitude:.4f}"}
+            
+    except Exception as e:
+        print(f"Reverse geocoding error: {e}")
+        return {"address": f"Coordinates: {request.latitude:.4f}, {request.longitude:.4f}"}
+
 # ---------------------- AUTH ENDPOINTS ----------------------
 @app.post("/api/signup", response_model=Token)
 async def signup(user: UserSignup):
@@ -172,6 +250,7 @@ async def signup(user: UserSignup):
             "password": hashed_password,
             "language": user.language,
             "location": user.location,
+            "coordinates": user.coordinates,
             "created_at": datetime.utcnow()
         }
         
