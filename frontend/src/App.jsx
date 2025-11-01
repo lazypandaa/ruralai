@@ -208,6 +208,86 @@ function App() {
     setShowModal(true)
   }
 
+  // Quick access functions that use user's location automatically
+  const getMyWeather = async () => {
+    setIsProcessing(true)
+    setError('')
+    setResponse('')
+    setAudioUrl(null)
+    
+    try {
+      const token = localStorage.getItem('token')
+      const res = await axios.post('http://localhost:8000/api/weather', { 
+        city: 'current', // This will use user's location from profile
+        language 
+      }, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      setResponse({ 
+        transcript: `Weather for my location (${user?.location})`, 
+        response_text: res.data.text 
+      })
+      
+      if (res.data.audio_data) {
+        const audioBlob = new Blob([Uint8Array.from(atob(res.data.audio_data), c => c.charCodeAt(0))], { type: 'audio/wav' })
+        const audioUrl = URL.createObjectURL(audioBlob)
+        setAudioUrl(audioUrl)
+        setTimeout(() => {
+          if (audioRef.current) {
+            audioRef.current.play()
+            setIsPlaying(true)
+          }
+        }, 100)
+      }
+    } catch (err) {
+      setError('Unable to fetch weather information for your location.')
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const getCropPricesForMyArea = (cropName) => {
+    return async () => {
+      setIsProcessing(true)
+      setError('')
+      setResponse('')
+      setAudioUrl(null)
+      
+      try {
+        const token = localStorage.getItem('token')
+        const res = await axios.post('http://localhost:8000/api/crop-prices', { 
+          crop: cropName,
+          language 
+          // market will automatically use user's location from profile
+        }, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        
+        setResponse({ 
+          transcript: `${cropName} prices in my area (${user?.location})`, 
+          response_text: res.data.text 
+        })
+        
+        if (res.data.audio_data) {
+          const audioBlob = new Blob([Uint8Array.from(atob(res.data.audio_data), c => c.charCodeAt(0))], { type: 'audio/wav' })
+          const audioUrl = URL.createObjectURL(audioBlob)
+          setAudioUrl(audioUrl)
+          setTimeout(() => {
+            if (audioRef.current) {
+              audioRef.current.play()
+              setIsPlaying(true)
+            }
+          }, 100)
+        }
+      } catch (err) {
+        setError(`Unable to fetch ${cropName} prices for your area.`)
+      } finally {
+        setIsProcessing(false)
+      }
+    }
+  }
+
   const closeModal = () => {
     setShowModal(false)
     setModalInput('')
@@ -345,28 +425,42 @@ function App() {
           </div>
         )}
 
-        {/* Feature buttons */}
+        {/* Quick Access Buttons */}
         <div className="feature-buttons">
-          <button className="feature-card" onClick={() => openModal('weather')}>
+          <button className="feature-card" onClick={getMyWeather} disabled={isProcessing}>
             <div className="icon">🌤</div>
-            <div className="title">Check Weather</div>
-            <div className="description">Get real-time weather updates for your area.</div>
+            <div className="title">My Weather</div>
+            <div className="description">Current weather for {user?.location?.split(',')[0] || 'your location'}</div>
+          </button>
+          {/* <button className="feature-card" onClick={getCropPricesForMyArea('Rice')} disabled={isProcessing}>
+            <div className="icon">🌾</div>
+            <div className="title">Rice Prices</div>
+            <div className="description">Latest rice prices in your area</div>
+          </button>
+          <button className="feature-card" onClick={getCropPricesForMyArea('Wheat')} disabled={isProcessing}>
+            <div className="icon">🌾</div>
+            <div className="title">Wheat Prices</div>
+            <div className="description">Latest wheat prices in your area</div>
+          </button> */}
+        {/* </div> */}
+
+        {/* More Options */}
+        {/* <div className="feature-buttons" style={{marginTop: '20px'}}> */}
+          <button className="feature-card" onClick={() => openModal('weather')}>
+            <div className="icon">🌍</div>
+            <div className="title">Other City Weather</div>
+            <div className="description">Check weather for any city</div>
           </button>
           <button className="feature-card" onClick={() => openModal('crop')}>
             <div className="icon">💰</div>
             <div className="title">Crop Prices</div>
-            <div className="description">Get the latest market prices for your crops.</div>
+            <div className="description">Check prices for any crop</div>
           </button>
           <button className="feature-card" onClick={() => openModal('schemes')}>
             <div className="icon">🏛</div>
             <div className="title">Govt Schemes</div>
-            <div className="description">Learn about government schemes available to you.</div>
+            <div className="description">Learn about government schemes</div>
           </button>
-          {/* <button className="feature-card">
-            <div className="icon">🗣</div>
-            <div className="title">Multi-Dialect Support</div>
-            <div className="description">Speak in your local language – Hindi, Telugu, Punjabi, Bhojpuri, and more.</div>
-          </button> */}
         </div>
 
         {error && <div className="error-message">{error}</div>}
@@ -404,7 +498,7 @@ function App() {
             </div>
             <div className="modal-body">
               <label>
-                {modalType === 'weather' && 'Enter your city:'}
+                {modalType === 'weather' && 'Enter city name:'}
                 {modalType === 'crop' && 'Enter crop name:'}
                 {modalType === 'schemes' && 'Enter topic (e.g., irrigation, fertilizer):'}
               </label>
@@ -413,13 +507,23 @@ function App() {
                 value={modalInput}
                 onChange={(e) => setModalInput(e.target.value)}
                 placeholder={
-                  modalType === 'weather' ? 'e.g., Delhi, Mumbai' :
-                  modalType === 'crop' ? 'e.g., Rice, Wheat' :
-                  'e.g., Irrigation, Seeds'
+                  modalType === 'weather' ? 'e.g., Delhi, Mumbai, Bangalore' :
+                  modalType === 'crop' ? 'e.g., Rice, Wheat, Cotton, Sugarcane' :
+                  'e.g., Irrigation, Seeds, Fertilizer, Loan'
                 }
                 onKeyPress={(e) => e.key === 'Enter' && handleModalSubmit()}
                 autoFocus
               />
+              {modalType === 'weather' && (
+                <p style={{fontSize: '12px', color: '#666', marginTop: '8px'}}>
+                  💡 Tip: Use "My Weather" button above for your location ({user?.location})
+                </p>
+              )}
+              {modalType === 'crop' && (
+                <p style={{fontSize: '12px', color: '#666', marginTop: '8px'}}>
+                  💡 Tip: Prices will be shown for your area ({user?.location?.split(',')[0] || 'your location'})
+                </p>
+              )}
             </div>
             <div className="modal-footer">
               <button className="cancel-button" onClick={closeModal}>Cancel</button>

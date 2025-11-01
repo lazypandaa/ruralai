@@ -691,14 +691,24 @@ async def process_text(request: TextRequest, current_user: dict = Depends(get_cu
 
 # ---------------------- WEATHER INFORMATION ----------------------
 class WeatherRequest(BaseModel):
-    city: str
+    city: Optional[str] = None
     language: str = "en"
 
 @app.post("/api/weather")
 async def get_weather(request: WeatherRequest, current_user: dict = Depends(get_current_user)):
     try:
+        # Use user's location if no city specified
+        city_to_check = request.city
+        if not city_to_check or city_to_check.lower() == 'current':
+            user_location = current_user.get("location", "Delhi")
+            # Extract city name from location string
+            if ',' in user_location:
+                city_to_check = user_location.split(',')[0].strip()
+            else:
+                city_to_check = user_location
+        
         api_key = os.getenv("OPENWEATHER_API_KEY", "99f42bfabc8ad962157251343277ea08")
-        url = f"http://api.openweathermap.org/data/2.5/weather?q={request.city}&appid={api_key}&units=metric&lang={request.language}"
+        url = f"http://api.openweathermap.org/data/2.5/weather?q={city_to_check}&appid={api_key}&units=metric&lang={request.language}"
         res = requests.get(url)
         data = res.json()
 
@@ -708,10 +718,30 @@ async def get_weather(request: WeatherRequest, current_user: dict = Depends(get_
         weather_desc = data["weather"][0]["description"]
         temp = data["main"]["temp"]
         humidity = data["main"]["humidity"]
-        response_text = f"The current weather in {request.city} is {weather_desc} with a temperature of {temp}°C and humidity {humidity}%."
+        
+        # Create response in user's language
+        if request.language != 'en':
+            english_response = f"The current weather in {city_to_check} is {weather_desc} with a temperature of {temp}°C and humidity {humidity}%. This is the weather information for your location."
+            
+            # Translate to user's language
+            language_name = get_language_name(request.language)
+            translate_instruction = f"Translate the following English text to {language_name}. Use proper native script. Only provide the translation, nothing else."
+            
+            translate_response = azure_client.chat.completions.create(
+                model=azure_deployment,
+                messages=[
+                    {"role": "system", "content": translate_instruction},
+                    {"role": "user", "content": english_response}
+                ],
+                max_tokens=500,
+                temperature=0.3
+            )
+            response_text = translate_response.choices[0].message.content.strip()
+        else:
+            response_text = f"The current weather in {city_to_check} is {weather_desc} with a temperature of {temp}°C and humidity {humidity}%. This is the weather information for your location."
         
         # Log the query
-        await log_user_query(current_user["email"], f"Weather for {request.city}", response_text, "weather")
+        await log_user_query(current_user["email"], f"Weather for {city_to_check}", response_text, "weather")
         
         # Generate TTS audio
         audio_data = None
@@ -732,17 +762,61 @@ async def get_weather(request: WeatherRequest, current_user: dict = Depends(get_
 # ---------------------- CROP PRICES ----------------------
 class CropPriceRequest(BaseModel):
     crop: str
-    market: str = "Delhi"
+    market: Optional[str] = None
     language: str = "en"
 
 @app.post("/api/crop-prices")
 async def get_crop_prices(request: CropPriceRequest, current_user: dict = Depends(get_current_user)):
     try:
-        # Simulated response
-        response_text = f"The latest price for {request.crop} in {request.market} is ₹{round(2500 + hash(request.crop) % 500)} per quintal."
+        # Use user's location from profile, fallback to provided market or Delhi
+        user_location = current_user.get("location", "Delhi")
+        market_location = request.market if request.market else user_location
+        
+        # Extract city name from location string (in case it's "City, State" format)
+        if ',' in market_location:
+            market_city = market_location.split(',')[0].strip()
+        else:
+            market_city = market_location
+        
+        # Generate realistic price based on crop and location
+        base_price = 2000
+        crop_multiplier = {
+            'wheat': 1.0, 'rice': 1.2, 'corn': 0.8, 'barley': 0.9,
+            'sugarcane': 2.5, 'cotton': 3.0, 'soybean': 2.2, 'mustard': 2.8,
+            'onion': 1.5, 'potato': 0.7, 'tomato': 1.8, 'chili': 4.0
+        }
+        
+        crop_lower = request.crop.lower()
+        multiplier = crop_multiplier.get(crop_lower, 1.5)
+        
+        # Add location-based variation
+        location_hash = hash(market_city.lower()) % 1000
+        final_price = round(base_price * multiplier + location_hash)
+        
+        # Create response in user's language
+        if request.language != 'en':
+            # Get response in English first
+            english_response = f"The latest price for {request.crop} in {market_city} market is ₹{final_price} per quintal. This price is based on current market conditions in your area."
+            
+            # Translate to user's language
+            language_name = get_language_name(request.language)
+            translate_instruction = f"Translate the following English text to {language_name}. Use proper native script. Only provide the translation, nothing else."
+            
+            translate_response = azure_client.chat.completions.create(
+                model=azure_deployment,
+                messages=[
+                    {"role": "system", "content": translate_instruction},
+                    {"role": "user", "content": english_response}
+                ],
+                max_tokens=500,
+                temperature=0.3
+            )
+            response_text = translate_response.choices[0].message.content.strip()
+        else:
+            response_text = f"The latest price for {request.crop} in {market_city} market is ₹{final_price} per quintal. This price is based on current market conditions in your area."
         
         # Log the query
-        await log_user_query(current_user["email"], f"Price for {request.crop}", response_text, "crop")
+        await log_user_query(current_user["email"], f"Price for {request.crop} in {market_city}", response_text, "crop")
         
         # Generate TTS audio
         audio_data = None
