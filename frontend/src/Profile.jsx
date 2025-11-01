@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Edit2, Save, X, User, Mail, MapPin, Globe, Calendar, MessageSquare, TrendingUp, Activity, Award } from 'lucide-react'
+import { ArrowLeft, Edit2, Save, X, User, Mail, MapPin, Globe, Calendar, MessageSquare, TrendingUp, Activity, Award, Menu } from 'lucide-react'
 import axios from 'axios'
 
 function Profile({ user, onBack, onUserUpdate }) {
@@ -13,6 +13,8 @@ function Profile({ user, onBack, onUserUpdate }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [stats, setStats] = useState({ total: 0, thisWeek: 0, types: {} })
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
+  const [activeSection, setActiveSection] = useState('profile')
 
   useEffect(() => {
     fetchUserQueries()
@@ -113,8 +115,47 @@ function Profile({ user, onBack, onUserUpdate }) {
       </div>
 
       <div className="profile-content">
+        <div className="mobile-menu-toggle">
+          <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="menu-button">
+            <Menu size={24} />
+            Menu
+          </button>
+        </div>
+        
+        <div className={`mobile-menu ${showMobileMenu ? 'show' : ''}`}>
+          <button 
+            className={`menu-item ${activeSection === 'profile' ? 'active' : ''}`}
+            onClick={() => { setActiveSection('profile'); setShowMobileMenu(false); }}
+          >
+            <User size={20} />
+            Profile
+          </button>
+          <button 
+            className={`menu-item ${activeSection === 'stats' ? 'active' : ''}`}
+            onClick={() => { setActiveSection('stats'); setShowMobileMenu(false); }}
+          >
+            <TrendingUp size={20} />
+            Activity Stats
+          </button>
+          <button 
+            className={`menu-item ${activeSection === 'types' ? 'active' : ''}`}
+            onClick={() => { setActiveSection('types'); setShowMobileMenu(false); }}
+          >
+            <Award size={20} />
+            Query Types
+          </button>
+          <button 
+            className={`menu-item ${activeSection === 'history' ? 'active' : ''}`}
+            onClick={() => { setActiveSection('history'); setShowMobileMenu(false); }}
+          >
+            <MessageSquare size={20} />
+            Query History
+          </button>
+        </div>
+        
         <div className="profile-grid">
           <div className="profile-main">
+            {(activeSection === 'profile' || window.innerWidth > 768) && (
             <div className="profile-card glass-card">
               <div className="card-header">
                 <div className="header-icon">
@@ -218,6 +259,9 @@ function Profile({ user, onBack, onUserUpdate }) {
               </div>
             </div>
 
+            )}
+            
+            {(activeSection === 'history' || window.innerWidth > 768) && (
             <div className="activity-card glass-card">
               <div className="card-header">
                 <div className="header-icon">
@@ -271,9 +315,11 @@ function Profile({ user, onBack, onUserUpdate }) {
                 </div>
               )}
             </div>
+            )}
           </div>
 
           <div className="profile-sidebar">
+            {(activeSection === 'stats' || window.innerWidth > 768) && (
             <div className="stats-card glass-card">
               <div className="card-header">
                 <div className="header-icon">
@@ -305,7 +351,9 @@ function Profile({ user, onBack, onUserUpdate }) {
                 </div>
               </div>
             </div>
+            )}
 
+            {(activeSection === 'types' || window.innerWidth > 768) && (
             <div className="types-card glass-card">
               <div className="card-header">
                 <div className="header-icon">
@@ -339,6 +387,7 @@ function Profile({ user, onBack, onUserUpdate }) {
                 ))}
               </div>
             </div>
+            )}
           </div>
         </div>
       </div>
