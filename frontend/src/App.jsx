@@ -19,6 +19,7 @@ function App() {
   const [showModal, setShowModal] = useState(false)
   const [modalType, setModalType] = useState('')
   const [modalInput, setModalInput] = useState('')
+  const [modalLocation, setModalLocation] = useState('')
   const [showProfile, setShowProfile] = useState(false)
 
   const mediaRecorderRef = useRef(null)
@@ -200,10 +201,16 @@ function App() {
     setModalType(type)
     // Pre-fill user's city for weather
     if (type === 'weather' && user?.location) {
-      const city = user.location.split(',')[0].trim() // Extract city from "Markapur, Andhra Pradesh"
+      const city = user.location.split(',')[0].trim()
       setModalInput(city)
     } else {
       setModalInput('')
+    }
+    // Pre-fill user's location for crop prices
+    if (type === 'crop' && user?.location) {
+      setModalLocation(user.location)
+    } else {
+      setModalLocation('')
     }
     setShowModal(true)
   }
@@ -291,6 +298,7 @@ function App() {
   const closeModal = () => {
     setShowModal(false)
     setModalInput('')
+    setModalLocation('')
   }
 
   const handleModalSubmit = async () => {
@@ -306,7 +314,11 @@ function App() {
           headers: { 'Authorization': `Bearer ${token}` }
         })
       } else if (modalType === 'crop') {
-        res = await axios.post('http://localhost:8000/api/crop-prices', { crop: modalInput, language }, {
+        res = await axios.post('http://localhost:8000/api/crop-prices', { 
+          crop: modalInput, 
+          market: modalLocation || undefined,
+          language 
+        }, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
       } else if (modalType === 'schemes') {
@@ -332,6 +344,7 @@ function App() {
     } finally {
       setIsProcessing(false)
       setModalInput('')
+      setModalLocation('')
     }
   }
 
@@ -514,6 +527,20 @@ function App() {
                 onKeyPress={(e) => e.key === 'Enter' && handleModalSubmit()}
                 autoFocus
               />
+              {modalType === 'crop' && (
+                <>
+                  <label style={{marginTop: '15px', display: 'block'}}>
+                    Location (market):
+                  </label>
+                  <input
+                    type="text"
+                    value={modalLocation}
+                    onChange={(e) => setModalLocation(e.target.value)}
+                    placeholder="e.g., Delhi, Mumbai (defaults to your location)"
+                    onKeyPress={(e) => e.key === 'Enter' && handleModalSubmit()}
+                  />
+                </>
+              )}
               {modalType === 'weather' && (
                 <p style={{fontSize: '12px', color: '#666', marginTop: '8px'}}>
                   💡 Tip: Use "My Weather" button above for your location ({user?.location})
@@ -521,7 +548,7 @@ function App() {
               )}
               {modalType === 'crop' && (
                 <p style={{fontSize: '12px', color: '#666', marginTop: '8px'}}>
-                  💡 Tip: Prices will be shown for your area ({user?.location?.split(',')[0] || 'your location'})
+                  💡 Location defaults to: {user?.location || 'your profile location'}
                 </p>
               )}
             </div>
