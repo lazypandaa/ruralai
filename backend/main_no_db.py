@@ -28,7 +28,7 @@ allowed_origins = [
     "http://localhost:3000",
     "http://localhost:5173",
     "https://lazypandaa.github.io",
-    "https://gramvaani-frontend.onrender.com",
+    "https://eshwarkrishna.me",
     "*"  # Allow all for now
 ]
 
@@ -100,7 +100,8 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         if user is None:
             raise HTTPException(status_code=401, detail="User not found")
         return user
-    except:
+    except Exception as e:
+        print(f"Auth error: {e}")
         raise HTTPException(status_code=401, detail="Invalid token")
 
 # Routes
@@ -137,15 +138,23 @@ async def signup(user: UserSignup):
 @app.post("/api/login", response_model=Token)
 async def login(user: UserLogin):
     try:
+        print(f"Login attempt for: {user.email}")
         db_user = users_db.get(user.email)
-        if not db_user or not verify_password(user.password, db_user["password"]):
+        if not db_user:
+            print(f"User not found: {user.email}")
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+        
+        if not verify_password(user.password, db_user["password"]):
+            print(f"Invalid password for: {user.email}")
             raise HTTPException(status_code=401, detail="Invalid credentials")
         
         access_token = create_access_token(data={"sub": user.email})
+        print(f"Login successful for: {user.email}")
         return {"access_token": access_token, "token_type": "bearer"}
     except HTTPException:
         raise
     except Exception as e:
+        print(f"Login error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/me")
