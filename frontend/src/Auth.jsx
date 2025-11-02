@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { User, Mail, Lock, MapPin, Globe, Loader } from 'lucide-react'
 import axios from 'axios'
-import { API_URL } from './api'
+import { API_URL } from './config'
 
 function Auth({ onLogin }) {
   const [isLogin, setIsLogin] = useState(true)
