@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { User, Mail, Lock, MapPin, Globe, Loader } from 'lucide-react'
-import axios from 'axios'
+import apiClient from './apiClient'
 import { API_URL } from './config'
 
 function Auth({ onLogin }) {
@@ -39,7 +39,7 @@ function Auth({ onLogin }) {
         setLocationMethod('Getting address details...')
         
         // Reverse geocode using backend
-        const response = await axios.post(`${API_URL}/api/reverse-geocode`, {
+        const response = await apiClient.post('/api/reverse-geocode', {
           latitude,
           longitude
         })
@@ -61,7 +61,7 @@ function Auth({ onLogin }) {
     
     // Fallback to IP-based location
     try {
-      const response = await axios.get(`${API_URL}/api/location`)
+      const response = await apiClient.get('/api/location')
       if (response.data.location) {
         setFormData(prev => ({ ...prev, location: response.data.location }))
         setLocationMethod('IP-based location')
@@ -92,7 +92,7 @@ function Auth({ onLogin }) {
         ? { email: formData.email, password: formData.password }
         : formData
 
-      const response = await axios.post(`${API_URL}${endpoint}`, payload)
+      const response = await apiClient.post(endpoint, payload)
       
       if (response.data.access_token) {
         localStorage.setItem('token', response.data.access_token)
