@@ -29,6 +29,7 @@ jobs:
     - name: Build
       run: |
         cd frontend
+        echo "Building with API_URL: https://gramvaani-backend.onrender.com"
         VITE_API_URL=https://gramvaani-backend.onrender.com npm run build
       env:
         VITE_API_URL: https://gramvaani-backend.onrender.com
