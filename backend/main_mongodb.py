@@ -7,7 +7,7 @@ from openai import AzureOpenAI
 import os
 import requests
 from passlib.context import CryptContext
-import PyJWT as jwt
+import jwt
 from datetime import datetime, timedelta
 from typing import Optional
 from motor.motor_asyncio import AsyncIOMotorClient
